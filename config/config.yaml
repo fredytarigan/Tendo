@@ -1,0 +1,22 @@
+---
+watchInterval: 1800
+watchTargets:
+  - secretName: "tke-private-domain"
+    opaqueSecretName: "tke-private-domain-opaque"
+    secretNamespace: "traefik"
+    certificateName: "tcc-mon-tipnet-xyz"
+    certificateRegion: "ap-singapore"
+    certificateResourceTypes:
+      - "clb"
+      - "tke"
+    
+  - secretName: "tke-public-domain"
+    opaqueSecretName: "tke-public-domain-opaque"
+    secretNamespace: "traefik"
+    certificateName: "tcc-mon-tipnet-link"
+    certificateRegion: "ap-singapore"
+    certificateResourceTypes:
+      - "clb"
+      - "tke"
+
+    

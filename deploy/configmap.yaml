@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tendo-config
+  namespace: tendo
+  labels:
+    app.kubernetes.io/name: tendo
+    app.kubernetes.io/instance: tendo
+data:
+  config.yaml: |
+    ---
+    watchInterval: 5
+    watchTargets:
+      - secretName: "certificate-a"
+        certificateID: "bbbbbbb"
+        secretNamespace: "tendo"
+      - secretName: "certificate-b"
+        certificateID: "ddddddd"
+        secretNamespace: "traefik"
