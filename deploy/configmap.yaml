@@ -13,8 +13,19 @@ data:
     watchInterval: 5
     watchTargets:
       - secretName: "certificate-a"
-        certificateID: "bbbbbbb"
+        opaqueSecretName: "certificate-a-opaque"
         secretNamespace: "tendo"
+        certificateName: "tencent-certificate-a"
+        certificateRegion: "ap-singapore"
+        certificateResourceTypes:
+          - "clb"
+          - "tke"
+
       - secretName: "certificate-b"
-        certificateID: "ddddddd"
-        secretNamespace: "traefik"
+        opaqueSecretName: "certificate-b-opaque"
+        secretNamespace: "tendo"
+        certificateName: "tencent-certificate-b"
+        certificateRegion: "ap-singapore"
+        certificateResourceTypes:
+          - "clb"
+          - "tke"
