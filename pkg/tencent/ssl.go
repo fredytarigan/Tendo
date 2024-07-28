@@ -46,6 +46,7 @@ func (t *TencentSSLCertificate) BuildClient() (*sslCertificate.Client, error) {
 	var client *sslCertificate.Client
 
 	profile := profile.NewClientProfile()
+	profile.HttpProfile.Endpoint = "ssl.tencentcloudapi.com"
 
 	client, err := sslCertificate.NewClient(t.Credentials, t.Region, profile)
 	if err != nil {
@@ -228,12 +229,23 @@ func (t *TencentSSLCertificate) UpdateCertificateDetail(client *sslCertificate.C
 	// build request
 	request := sslCertificate.NewUpdateCertificateInstanceRequest()
 	request.OldCertificateId = common.StringPtr(t.CertificateID)
-	request.CertificateId = &t.CertificateID
-	request.CertificatePublicKey = &publicKeyString
-	request.CertificatePrivateKey = &privateKeyString
-	request.ResourceTypes = certificateResourcesTypes
+	request.CertificateId = common.StringPtr(t.CertificateID)
+	request.CertificatePublicKey = common.StringPtr(publicKeyString)
+	request.CertificatePrivateKey = common.StringPtr(privateKeyString)
+	request.ResourceTypes = common.StringPtrs([]string{"clb", "tke"})
+	request.ResourceTypesRegions = []*sslCertificate.ResourceTypeRegions {
+		&sslCertificate.ResourceTypeRegions {
+			ResourceType: common.StringPtr("clb"),
+			Regions: common.StringPtrs([]string{"ap-singapore"}),
+		},
+		&sslCertificate.ResourceTypeRegions {
+			ResourceType: common.StringPtr("tke"),
+			Regions: common.StringPtrs([]string{"ap-singapore"}),
+		},
+	}
 	request.Repeatable = common.BoolPtr(true)
 	request.AllowDownload = common.BoolPtr(true)
+	request.ExpiringNotificationSwitch = common.Uint64Ptr(0)
 
 	response, err := client.UpdateCertificateInstanceWithContext(t.Context, request)
 	if _, ok := err.(*tencentCloudSDKError.TencentCloudSDKError); ok {
@@ -246,11 +258,14 @@ func (t *TencentSSLCertificate) UpdateCertificateDetail(client *sslCertificate.C
 		return err
 	}
 
-	_, err = json.Marshal(response.ToJsonString())
+	cert, err := json.Marshal(response.Response)
 	if err != nil {
 		err := fmt.Errorf("invalid response while updating certificate with name %s with error: %s", t.CertificateName, err)
 		return err
 	}
+
+	fmt.Printf("%s \n", cert)
+	fmt.Println("")
 
 	return nil
 }
