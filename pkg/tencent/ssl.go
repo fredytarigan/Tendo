@@ -20,9 +20,14 @@ type TencentSSLCertificate struct {
 	Region 						string
 	CertificateID 	 			 string
 	CertificateName  			 string
-	CertificateResourceTypes	 []string
+	CertificateResourceTypes	 []CertificateResourceType
 	PublicKey					string
 	PrivateKey					string
+}
+
+type CertificateResourceType struct {
+	Name 		string		`mapstructure:"name"`
+	Regions 	[]string	`mapstructure:"regions"`
 }
 
 type CertificateData struct {
@@ -221,9 +226,19 @@ func (t *TencentSSLCertificate) UpdateCertificateDetail(client *sslCertificate.C
 	}
 	privateKeyString := string(privateKeyByte)
 
-	var certificateResourcesTypes []*string
-	for _, item := range t.CertificateResourceTypes {
-		certificateResourcesTypes = append(certificateResourcesTypes, &item)
+	var resourceTypes []string
+	for _, value := range t.CertificateResourceTypes {
+		resourceTypes = append(resourceTypes, value.Name)
+	}
+
+	var resourceTypesRegions []*sslCertificate.ResourceTypeRegions
+	for _, value := range t.CertificateResourceTypes {
+		result := sslCertificate.ResourceTypeRegions {
+			ResourceType: common.StringPtr(value.Name),
+			Regions: common.StringPtrs(value.Regions),
+		}
+
+		resourceTypesRegions = append(resourceTypesRegions, &result)
 	}
 
 	// build request
@@ -232,17 +247,8 @@ func (t *TencentSSLCertificate) UpdateCertificateDetail(client *sslCertificate.C
 	request.CertificateId = common.StringPtr(t.CertificateID)
 	request.CertificatePublicKey = common.StringPtr(publicKeyString)
 	request.CertificatePrivateKey = common.StringPtr(privateKeyString)
-	request.ResourceTypes = common.StringPtrs([]string{"clb", "tke"})
-	request.ResourceTypesRegions = []*sslCertificate.ResourceTypeRegions {
-		&sslCertificate.ResourceTypeRegions {
-			ResourceType: common.StringPtr("clb"),
-			Regions: common.StringPtrs([]string{"ap-singapore"}),
-		},
-		&sslCertificate.ResourceTypeRegions {
-			ResourceType: common.StringPtr("tke"),
-			Regions: common.StringPtrs([]string{"ap-singapore"}),
-		},
-	}
+	request.ResourceTypes = common.StringPtrs(resourceTypes)
+	request.ResourceTypesRegions = resourceTypesRegions
 	request.Repeatable = common.BoolPtr(true)
 	request.AllowDownload = common.BoolPtr(true)
 	request.ExpiringNotificationSwitch = common.Uint64Ptr(0)

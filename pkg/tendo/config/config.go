@@ -20,13 +20,18 @@ type Config struct {
 }
 
 type WatchConfig struct {
-	SecretName		 		   string 	   `mapstructure:"secretName"`
-	OpaqueSecretName		   string	   `mapstructure:"opaqueSecretName"`
-	SecretNamespace			   string 	   `mapstructure:"secretNamespace"`
-	CertificateID 	 	 		string		`mapstructure:"certificateID"`
-	CertificateName		 		string 		`mapstructure:"certificateName"`
-	CertificateRegion	 		string		`mapstructure:"certificateRegion"`
-	CertificateResourceTypes	[]string	`mapstructure:"certificateResourceTypes"`
+	SecretName		 		   string 	       			   `mapstructure:"secretName"`
+	OpaqueSecretName		   string	   				   `mapstructure:"opaqueSecretName"`
+	SecretNamespace			   string 	   				   `mapstructure:"secretNamespace"`
+	CertificateID 	 	 		string						`mapstructure:"certificateID"`
+	CertificateName		 		string 						`mapstructure:"certificateName"`
+	CertificateRegion	 		string						`mapstructure:"certificateRegion"`
+	CertificateResourceTypes	[]CertificateResourceType	 `mapstructure:"certificateResourceTypes"`
+}
+
+type CertificateResourceType struct {
+	Name	string 		`mapstructure:"name"`
+	Regions	[]string 	`mapstructure:"regions"`
 }
 
 func SetConfigFile(path string) {
