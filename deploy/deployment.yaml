@@ -1,0 +1,76 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tendo
+  namespace: tendo
+  labels:
+    app.kubernetes.io/name: tendo
+    app.kubernetes.io/instance: tendo
+spec:
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tendo
+      app.kubernetes.io/instance: tendo
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 75%
+      maxUnavailable: 25%
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8083"
+      labels:
+        app.kubernetes.io/name: tendo
+        app.kubernetes.io/instance: tendo
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      serviceAccountName: tendo
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: tendo
+          image: tendo
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "/app/entrypoint.sh server"
+          env:
+            - name: APP_HOST
+              value: "0.0.0.0"
+          imagePullPolicy: Never
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8085
+            failureThreshold: 1
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8085
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /app/config/config.yaml
+              subPath: config.yaml
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: tendo-config
