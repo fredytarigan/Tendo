@@ -37,6 +37,8 @@ While manually adding and modifying the certificate is not a hard task, we need 
 
 To build the tool, make sure golang already available on your system or you can build the docker image also.
 
+Make sure the `config.yaml` file is placed in the same directory with the current directory you are running the binary is. Take a look for [config example](./config/config.yaml.example) for config references.
+
 ### Manual Build
 
 Run this to build the binary
