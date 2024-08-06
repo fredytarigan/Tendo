@@ -46,13 +46,23 @@ func RunLoop(ctx context.Context, c *config.Config, kubeconfig string, item conf
 		return err
 	}
 
+	var certificateRequestTypes []tencent.CertificateResourceType
+	for _, value := range item.CertificateResourceTypes {
+		result := tencent.CertificateResourceType {
+			Name: value.Name,
+			Regions: value.Regions,
+		}
+		certificateRequestTypes = append(certificateRequestTypes, result)
+	}
+
+
 	tencentSSLCertificate := tencent.TencentSSLCertificate {
 		Context: ctx,
 		Credentials: tencentCreds,
 		Region: item.CertificateRegion,
 		CertificateID: item.CertificateID,
 		CertificateName: item.CertificateName,
-		CertificateResourceTypes: item.CertificateResourceTypes,
+		CertificateResourceTypes: certificateRequestTypes,
 		PublicKey: secret.PublicKey,
 		PrivateKey: secret.PrivateKey,
 	}
@@ -93,6 +103,16 @@ func RunLoop(ctx context.Context, c *config.Config, kubeconfig string, item conf
 	if err != nil {
 		return err
 	}
+
+	// wait for 5 seconds, for deployment started
+	time.Sleep(5 * time.Second)
+
+	_, err = tencentSSLCertificate.WatchCertificateUpdateStatus(client)
+	if err != nil {
+		return err
+	}
+
+	// fmt.Printf("Watch certificate update result: %s", newCertID)
 
 	return nil
 }

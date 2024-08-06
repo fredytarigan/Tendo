@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/tencentcloud/tencentcloud-sdk-go-intl-en/tencentcloud/common"
 	tencentCloudSDKError "github.com/tencentcloud/tencentcloud-sdk-go-intl-en/tencentcloud/common/errors"
@@ -20,9 +22,14 @@ type TencentSSLCertificate struct {
 	Region 						string
 	CertificateID 	 			 string
 	CertificateName  			 string
-	CertificateResourceTypes	 []string
+	CertificateResourceTypes	 []CertificateResourceType
 	PublicKey					string
 	PrivateKey					string
+}
+
+type CertificateResourceType struct {
+	Name 		string		`mapstructure:"name"`
+	Regions 	[]string	`mapstructure:"regions"`
 }
 
 type CertificateData struct {
@@ -36,6 +43,22 @@ type CertificateDetail struct {
 
 type CertificateNotFoundError struct {
 	Message string
+}
+
+type CertifiateUpdateStatus struct {
+	TotalCount			int								`json:"TotalCount"`
+	DeployRecordLists 	[]CertificateDeployRecord		 `json:"DeployRecordList"`
+	RequestID 			string 							`json:"RequestId"`
+}
+
+type CertificateDeployRecord struct {
+	ID 				int			`json:"Id"`
+	CertID 			string 		`json:"CertId"`
+	OldCertID 		string 		`json:"OldCertId"`
+	ResourceTypes 	[]string 	`json:"ResourceTypes"`
+	Status 			int 		`json:"Status"`
+	CreateTime 		string 		`json:"CreateTime"`
+	UpdateTime 		string 		`json:"UpdateTime"`
 }
 
 func (e *CertificateNotFoundError) Error() string {
@@ -127,6 +150,7 @@ func (t *TencentSSLCertificate) GetCertificateDetail(client *sslCertificate.Clie
 
 func (t *TencentSSLCertificate) GetCertificateData(client *sslCertificate.Client) (CertificateDetail, error) {
 	var certDetail CertificateDetail
+
 
 	// get certificate id
 	if t.CertificateID == "" {
@@ -221,9 +245,19 @@ func (t *TencentSSLCertificate) UpdateCertificateDetail(client *sslCertificate.C
 	}
 	privateKeyString := string(privateKeyByte)
 
-	var certificateResourcesTypes []*string
-	for _, item := range t.CertificateResourceTypes {
-		certificateResourcesTypes = append(certificateResourcesTypes, &item)
+	var resourceTypes []string
+	for _, value := range t.CertificateResourceTypes {
+		resourceTypes = append(resourceTypes, value.Name)
+	}
+
+	var resourceTypesRegions []*sslCertificate.ResourceTypeRegions
+	for _, value := range t.CertificateResourceTypes {
+		result := sslCertificate.ResourceTypeRegions {
+			ResourceType: common.StringPtr(value.Name),
+			Regions: common.StringPtrs(value.Regions),
+		}
+
+		resourceTypesRegions = append(resourceTypesRegions, &result)
 	}
 
 	// build request
@@ -232,17 +266,8 @@ func (t *TencentSSLCertificate) UpdateCertificateDetail(client *sslCertificate.C
 	request.CertificateId = common.StringPtr(t.CertificateID)
 	request.CertificatePublicKey = common.StringPtr(publicKeyString)
 	request.CertificatePrivateKey = common.StringPtr(privateKeyString)
-	request.ResourceTypes = common.StringPtrs([]string{"clb", "tke"})
-	request.ResourceTypesRegions = []*sslCertificate.ResourceTypeRegions {
-		&sslCertificate.ResourceTypeRegions {
-			ResourceType: common.StringPtr("clb"),
-			Regions: common.StringPtrs([]string{"ap-singapore"}),
-		},
-		&sslCertificate.ResourceTypeRegions {
-			ResourceType: common.StringPtr("tke"),
-			Regions: common.StringPtrs([]string{"ap-singapore"}),
-		},
-	}
+	request.ResourceTypes = common.StringPtrs(resourceTypes)
+	request.ResourceTypesRegions = resourceTypesRegions
 	request.Repeatable = common.BoolPtr(true)
 	request.AllowDownload = common.BoolPtr(true)
 	request.ExpiringNotificationSwitch = common.Uint64Ptr(0)
@@ -258,14 +283,155 @@ func (t *TencentSSLCertificate) UpdateCertificateDetail(client *sslCertificate.C
 		return err
 	}
 
-	cert, err := json.Marshal(response.Response)
+	_, err = json.Marshal(response.Response)
 	if err != nil {
 		err := fmt.Errorf("invalid response while updating certificate with name %s with error: %s", t.CertificateName, err)
 		return err
 	}
 
-	fmt.Printf("%s \n", cert)
-	fmt.Println("")
-
 	return nil
+}
+
+func (t *TencentSSLCertificate) WatchCertificateUpdateStatus(client *sslCertificate.Client) (string, error) {
+	updateFinished := false
+
+	for !updateFinished {
+		certDeployRecordList, err := t.DescribeCertificateUpdateStatus(client)
+		if err != nil {
+			return "", err
+		}
+
+		var wg sync.WaitGroup
+		status := []int{}
+
+		for _, item := range certDeployRecordList {
+
+			fmt.Println("Checking for certificate deployment status")
+
+			wg.Add(1)
+
+			go func(item CertificateDeployRecord) {
+				defer wg.Done()
+
+				status = append(status, item.Status)
+			}(item)
+		}
+
+		wg.Wait()
+
+		if allStatusIsDone(status) {
+			fmt.Println("All deployment is completed")
+
+			for _, item := range certDeployRecordList {
+				_, err := t.DeleteCertificate(client, item.OldCertID)
+				if err != nil {
+					fmt.Printf("%s", err)
+					continue
+				}
+
+				_, err = t.ModifyCertificateName(client, item.CertID, t.CertificateName)
+				if err != nil {
+					fmt.Printf("%s", err)
+					continue
+				}
+			}
+			
+			break
+		}
+
+		fmt.Println("Not all deployment is finished, so we are waiting for all deployment to completed")
+		time.Sleep(5 * time.Second)
+	}
+
+	return "", nil
+}
+
+func (t *TencentSSLCertificate) DescribeCertificateUpdateStatus(client *sslCertificate.Client) ([]CertificateDeployRecord, error) {
+	var certificateUpdateStatus CertifiateUpdateStatus
+	var certificateDeployRecord []CertificateDeployRecord
+
+	request := sslCertificate.NewDescribeHostUpdateRecordRequest()
+	request.OldCertificateId = common.StringPtr(t.CertificateID)
+
+	response, err := client.DescribeHostUpdateRecordWithContext(t.Context, request)
+	if _, ok := err.(*tencentCloudSDKError.TencentCloudSDKError); ok {
+		err := fmt.Errorf("failed to get certificate %s update with error: %s", t.CertificateID, err)
+		return certificateDeployRecord, err
+	}
+
+	if err != nil {
+		err := fmt.Errorf("failed to get certificate %s update with error: %s", t.CertificateID, err)
+		return certificateDeployRecord, err
+	}
+
+	cert, err := json.Marshal(response.Response)
+	if err != nil {
+		err :=  fmt.Errorf("invalid response while getting certificate update with name %s with error: %s", t.CertificateID, err)
+		return certificateDeployRecord, err
+	}
+
+	err = json.Unmarshal([]byte(cert), &certificateUpdateStatus)
+	if err != nil {
+		err := fmt.Errorf("unable to parse response with error :%s", err)
+		return certificateDeployRecord, err
+	}
+
+	if certificateUpdateStatus.TotalCount > 0 {
+		for _, status := range certificateUpdateStatus.DeployRecordLists {
+			fmt.Printf("Status: %v", status)
+			fmt.Println("")
+		}
+
+		return certificateUpdateStatus.DeployRecordLists, nil
+	} 
+
+	err = fmt.Errorf("certificate update status is not found")
+	return certificateDeployRecord, err
+}
+
+func allStatusIsDone(a []int) bool {
+	for i := 1; i < len(a); i++ {
+		if a[i] != 1 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (t *TencentSSLCertificate) DeleteCertificate(client *sslCertificate.Client, certID string) (bool, error) {
+	request := sslCertificate.NewDeleteCertificateRequest()
+	request.CertificateId = common.StringPtr(certID)
+
+	_, err := client.DeleteCertificateWithContext(t.Context, request)
+	if _, ok := err.(*tencentCloudSDKError.TencentCloudSDKError); ok {
+		err := fmt.Errorf("failed to remove certificate %s with error: %s", certID, err)
+		return false, err
+	}
+
+	if err != nil {
+		err := fmt.Errorf("failed to remove certificate %s with error: %s", certID, err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (t *TencentSSLCertificate) ModifyCertificateName(client *sslCertificate.Client, certID string, name string) (bool, error) {
+	request := sslCertificate.NewModifyCertificateAliasRequest()
+	request.CertificateId = common.StringPtr(certID)
+	request.Alias = common.StringPtr(name)
+
+	_, err := client.ModifyCertificateAliasWithContext(t.Context, request)
+	if _, ok := err.(*tencentCloudSDKError.TencentCloudSDKError); ok {
+		err := fmt.Errorf("failed to change certificate name in id %s with error: %s", certID, err)
+		return false, err
+	}
+
+	if err != nil {
+		err := fmt.Errorf("failed to change certificate name in id %s with error: %s", certID, err)
+		return false, err
+	}
+
+	return true, nil
 }
