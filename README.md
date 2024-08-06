@@ -1,12 +1,12 @@
 # Tendo
 
-A simple and basic tools to auto update Tencent SSL Certificate based on Cert-Manager certificate secret.
+A simple and basic tool to auto update Tencent SSL Certificate based on Cert Manager certificate secret.
 
 ## Background
 
-At the moment we release this tools, Tencent SSL Certificate only support ssl certificate in kubernetes secret with secret type `Opaque`. 
+At the moment we release this tool, Tencent SSL Certificate only support SSL Certificates in kubernetes secret with secret type `Opaque`. 
 
-We are using Cert-Manager in our kubernetes cluster to auto generate and verify SSL Certificate from Let's Encrypt. Unfortunately, the secret created by Cert-Manager come with type `kubernetes.io/tls`. 
+We are using Cert-Manager in our kubernetes cluster to auto generate and verify SSL Certificates from Let's Encrypt. Unfortunately, the secret created by Cert Manager comes with the type `kubernetes.io/tls`. 
 
 As a result, we can not export the certificate into Tencent SSL Certificate.
 
@@ -31,4 +31,4 @@ metadata:
 type: Opaque
 ```
 
-While manually adding and modify the certificate is not a hard task, but we need to automated the process because let's encrypt certificate need to be renewed every three months. With this tools, the whole process will be done automatically.
+While manually adding and modifying the certificate is not a hard task, we need to automate the process because let's encrypt certificates that need to be renewed every three months. With this tool, the whole process will be done automatically.
