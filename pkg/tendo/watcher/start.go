@@ -104,5 +104,15 @@ func RunLoop(ctx context.Context, c *config.Config, kubeconfig string, item conf
 		return err
 	}
 
+	// wait for 5 seconds, for deployment started
+	time.Sleep(5 * time.Second)
+
+	_, err = tencentSSLCertificate.WatchCertificateUpdateStatus(client)
+	if err != nil {
+		return err
+	}
+
+	// fmt.Printf("Watch certificate update result: %s", newCertID)
+
 	return nil
 }
