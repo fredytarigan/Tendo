@@ -69,5 +69,6 @@ docker pull fredytarigan/tendo:latest
 
 There is an example for kubernetes deployment in [deploy](./deploy/) directory. You need to adjust the namespace and configmap into your needs.
 
+## License
 
-
+MIT License, see [LICENSE](./LICENSE)
