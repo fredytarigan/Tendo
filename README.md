@@ -27,8 +27,45 @@ data:
 kind: Secret
 metadata:
   name: example-domain-opaque
-  namespace: traefik
+  namespace: tendo
 type: Opaque
 ```
 
 While manually adding and modifying the certificate is not a hard task, we need to automate the process because let's encrypt certificates that need to be renewed every three months. With this tool, the whole process will be done automatically.
+
+## Building
+
+To build the tool, make sure golang already available on your system or you can build the docker image also.
+
+### Manual Build
+
+Run this to build the binary
+
+```bash
+go mod tidy
+CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o app main.go
+
+# run the tool
+./app
+```
+
+### Docker Build
+
+Build the docker image in your local system.
+
+```bash
+docker build -t tendo:latest -f dockerbuild/Dockerfile .
+```
+
+Or just pull the released version from dockerhub.
+
+```bash
+docker pull fredytarigan/tendo:latest
+```
+
+## Kubernetes Deployment
+
+There is an example for kubernetes deployment in [deploy](./deploy/) directory. You need to adjust the namespace and configmap into your needs.
+
+
+
