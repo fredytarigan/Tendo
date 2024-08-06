@@ -20,6 +20,7 @@ Making kubernetes secret with type `kubernetes.io/tls` working with Tencent SSL 
 * Create a secret with type `Opaque` in kubernetes cluster and add the Tencent Cloud SSL Certificate ID
 
 ```yaml
+# Opaque Secret Example
 apiVersion: v1
 data:
   qcloud_cert_id: Q2VydGlmaWNhdGVTb21lSUQ=
@@ -29,3 +30,5 @@ metadata:
   namespace: traefik
 type: Opaque
 ```
+
+While manually adding and modify the certificate is not a hard task, but we need to automated the process because let's encrypt certificate need to be renewed every three months. With this tools, the whole process will be done automatically.
