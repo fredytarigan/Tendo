@@ -22,7 +22,26 @@ func BuildCredentials() (common.CredentialIface, error) {
 		return creds, nil
 	}
 
-	providerChain := common.DefaultProviderChain()
+	// if we run in tke, use DefaultTkeOIDCRoleArnProvider
+	if os.Getenv("TKE_REGION") != "" && os.Getenv("TKE_PROVIDER_ID") != "" && os.Getenv("TKE_WEB_IDENTITY_TOKEN_FILE") != "" && os.Getenv("TKE_ROLE_ARN") != "" {
+		provider, err := common.DefaultTkeOIDCRoleArnProvider()
+
+		if err == nil {
+			creds, err := provider.GetCredential()
+
+			if err == nil {
+				return creds, nil
+			}
+		}
+	}
+
+	providerChain := common.NewProviderChain(
+		[]common.Provider{
+			common.DefaultEnvProvider(),
+			common.DefaultProfileProvider(),
+			common.DefaultCvmRoleProvider(),
+		},
+	)
 	creds, err := providerChain.GetCredential()
 
 	if err != nil {
