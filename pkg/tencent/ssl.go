@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fredytarigan/Tendo/pkg/tendo/logger"
 	"github.com/tencentcloud/tencentcloud-sdk-go-intl-en/tencentcloud/common"
 	tencentCloudSDKError "github.com/tencentcloud/tencentcloud-sdk-go-intl-en/tencentcloud/common/errors"
 	"github.com/tencentcloud/tencentcloud-sdk-go-intl-en/tencentcloud/common/profile"
@@ -159,8 +160,8 @@ func (t *TencentSSLCertificate) GetCertificateData(client *sslCertificate.Client
 		if err != nil {
 			certNotFoundError := &CertificateNotFoundError{}
 			if errors.As(err, &certNotFoundError) {
-				fmt.Printf("certificate with name %s not found \n", t.CertificateName)
-				fmt.Printf("will create a new certificate in tencent cloud with name %s \n", t.CertificateName)
+				logger.Logger.Info(fmt.Sprintf("certificate with name %s not found", t.CertificateName))
+				logger.Logger.Info(fmt.Sprintf("will create a new certificate in tencent cloud with name %s", t.CertificateName))
 
 				certificateID, err = t.CreateCertificate(client)
 				if err != nil {
@@ -306,7 +307,7 @@ func (t *TencentSSLCertificate) WatchCertificateUpdateStatus(client *sslCertific
 
 		for _, item := range certDeployRecordList {
 
-			fmt.Println("Checking for certificate deployment status")
+			logger.Logger.Info("Checking for certificate deployment status")
 
 			wg.Add(1)
 
@@ -320,7 +321,7 @@ func (t *TencentSSLCertificate) WatchCertificateUpdateStatus(client *sslCertific
 		wg.Wait()
 
 		if allStatusIsDone(status) {
-			fmt.Println("All deployment is completed")
+			logger.Logger.Info("All deployment is completed")
 
 			for _, item := range certDeployRecordList {
 				_, err := t.DeleteCertificate(client, item.OldCertID)
@@ -339,7 +340,7 @@ func (t *TencentSSLCertificate) WatchCertificateUpdateStatus(client *sslCertific
 			break
 		}
 
-		fmt.Println("Not all deployment is finished, so we are waiting for all deployment to completed")
+		logger.Logger.Info("Not all deployment is finished, so we are waiting for all deployment to completed")
 		time.Sleep(5 * time.Second)
 	}
 

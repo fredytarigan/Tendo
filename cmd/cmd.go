@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/fredytarigan/Tendo/pkg/tendo/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,8 @@ func NewCommandEngine() *CommandEngine {
 }
 
 func (c *CommandEngine) Run() {
+	defer logger.Logger.Sync()
+
 	var kubeconfig string
 
 	var commands = []*cobra.Command {
@@ -47,6 +50,7 @@ func (c *CommandEngine) Run() {
 	}
 
 	if err := c.rootCmd.Execute(); err != nil {
-		fmt.Printf("failed to execute command with error: %s", err)
+		msg := fmt.Sprintf("failed to execute command with error: %s", err)
+		logger.Logger.Error(msg)
 	}
 }

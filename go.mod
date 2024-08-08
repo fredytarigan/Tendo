@@ -7,6 +7,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/tencentcloud/tencentcloud-sdk-go-intl-en v3.0.1008+incompatible
+	go.uber.org/zap v1.21.0
 	k8s.io/api v0.30.3
 	k8s.io/apimachinery v0.30.3
 	k8s.io/client-go v0.30.3

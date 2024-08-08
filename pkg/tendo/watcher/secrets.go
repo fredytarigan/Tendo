@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/fredytarigan/Tendo/pkg/k8s"
+	"github.com/fredytarigan/Tendo/pkg/tendo/logger"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +48,7 @@ func GetSecret(kubeconfig string, secretNamespace string, secretName string) (Se
 				encodedValue := base64.StdEncoding.EncodeToString([]byte(value))
 				privateKey = encodedValue
 			} else {
-				fmt.Printf("unsupported secret data")
+				logger.Logger.Error("unsupported secret data")
 			}
 		}
 
@@ -65,7 +66,7 @@ func CreateOpaqueSecret(kubeconfig string, secretNamespace string, secretName st
 
 	if errors.IsNotFound(err) {
 		// create the secret
-		fmt.Printf("secret %s not found, creating a new one \n", secretName)
+		logger.Logger.Info(fmt.Sprintf("secret %s not found, creating a new one", secretName))
 
 		secretClient := client.CoreV1().Secrets(secretNamespace)
 		secret := &apiv1.Secret{

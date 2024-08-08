@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,8 +10,10 @@ import (
 	"time"
 
 	"github.com/fredytarigan/Tendo/pkg/tendo/config"
+	"github.com/fredytarigan/Tendo/pkg/tendo/logger"
 	"github.com/fredytarigan/Tendo/pkg/tendo/watcher"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 func ServerListen(kubeconfig string) {
@@ -23,6 +24,10 @@ func ServerListen(kubeconfig string) {
 	handler := mux.NewRouter();
 
 	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		logger.Logger.Info(
+			"incoming request",
+			zap.String("path", "/"),
+		)
 		fmt.Fprintf(w, "Hello World !!!")
 	})
 
@@ -39,7 +44,7 @@ func ServerListen(kubeconfig string) {
 	go func() {
 		address := fmt.Sprintf("%s:%s", cfg.AppHost, cfg.AppPort)
 
-		fmt.Printf("Server is running and listening on %s \n", address)
+		logger.Logger.Info(fmt.Sprintf("Server is running and listening on %s", address))
 
 		srvHttp := &http.Server{
 			ReadTimeout: 5 * time.Second,
@@ -54,12 +59,12 @@ func ServerListen(kubeconfig string) {
 	go func() {
 		// wait for http server is running
 		time.Sleep(5 * time.Second)
-		fmt.Println("Start running watcher service")
+		logger.Logger.Info("Start running watcher service")
 
 		watcher.Start(ctx, &cfg, kubeconfig)
 	}()
 
-	log.Fatalf("Received unrecovered errors, %s", <-errs)
+	logger.Logger.Fatal(fmt.Sprintf("Received unrecovered errors, %s", <-errs))
 }
 
 func initServeHttp(handler *mux.Router) {
