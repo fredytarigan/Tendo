@@ -2,8 +2,8 @@ package k8s
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/fredytarigan/Tendo/pkg/tendo/logger"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -30,14 +30,12 @@ func BuildConfig(kubeconfig string) (*rest.Config, error) {
 func GetKubernetesConfig(kubeconfig string) kubernetes.Clientset {
 	config, err := BuildConfig(kubeconfig)
 	if err != nil {
-		err := fmt.Sprintf("unable to build kubernetes client config with error: %s", err)
-		log.Fatal(err)
+		logger.Logger.Fatal(fmt.Sprintf("unable to build kubernetes client config with error: %s", err))
 	}
 
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		err := fmt.Sprintf("unable to setup kubernetes client with error: %s", err)
-		log.Fatal(err)
+		logger.Logger.Fatal(fmt.Sprintf("unable to setup kubernetes client with error: %s", err))
 	}
 
 	return *clientSet

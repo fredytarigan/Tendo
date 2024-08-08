@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/fredytarigan/Tendo/cmd"
 	"github.com/fredytarigan/Tendo/pkg/tendo/config"
+	"github.com/fredytarigan/Tendo/pkg/tendo/logger"
 )
 
 func init() {
-	fmt.Println("Starting application service");
-	fmt.Println("Initializing application config");
+	logger.Logger.Info("Starting application service")
+	logger.Logger.Info("Initializing application config")
+	
 	config.SetConfigFile("./config")
 }
 

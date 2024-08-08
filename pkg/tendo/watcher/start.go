@@ -7,6 +7,7 @@ import (
 
 	"github.com/fredytarigan/Tendo/pkg/tencent"
 	"github.com/fredytarigan/Tendo/pkg/tendo/config"
+	"github.com/fredytarigan/Tendo/pkg/tendo/logger"
 )
 
 func Start(ctx context.Context, c *config.Config, kubeconfig string) error {
@@ -19,7 +20,7 @@ func Start(ctx context.Context, c *config.Config, kubeconfig string) error {
 			go func() {
 				err := RunLoop(ctx, c, kubeconfig, item)
 				if err != nil {
-					fmt.Printf("%s \n", err)
+					logger.Logger.Error(fmt.Sprintf("%s", err))
 				}
 			}()
 		}
@@ -88,16 +89,16 @@ func RunLoop(ctx context.Context, c *config.Config, kubeconfig string, item conf
 	}
 
 	if !certChanged {
-		fmt.Printf("certificate in secret %s is up to date with certificate stored in tencent cloud \n", item.SecretName)
-		fmt.Println("not doing anything for now")
+		logger.Logger.Info(fmt.Sprintf("certificate in secret %s is up to date with certificate stored in tencent cloud", item.SecretName))
+		logger.Logger.Info("not doing anything for now")
 
 		return nil
 	}
 
 	// if secret is not matched
 	// we update certificates in tencent cloud
-	fmt.Printf("certificate in secret %s is not matched with certificated stored in tencent cloud with name %s \n", item.SecretName, item.CertificateName)
-	fmt.Printf("updating certificate in tencent cloud for certificate with name %s \n", item.CertificateName)
+	logger.Logger.Info(fmt.Sprintf("certificate in secret %s is not matched with certificated stored in tencent cloud with name %s", item.SecretName, item.CertificateName))
+	logger.Logger.Info(fmt.Sprintf("updating certificate in tencent cloud for certificate with name %s", item.CertificateName))
 
 	err = tencentSSLCertificate.UpdateCertificateDetail(client)
 	if err != nil {
